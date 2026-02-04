@@ -3,14 +3,15 @@ import esphome.config_validation as cv
 from esphome.components import uart
 from esphome.const import CONF_ID
 
-DEPENDENCIES = ['uart']
+CODEOWNERS = ["@0xgiddi"]
+DEPENDENCIES = ["uart"]
 MULTI_CONF = False
 
-CONF_TX_UART = 'tx_uart'
-CONF_RX_UART = 'rx_uart'
+CONF_TX_UART = "tx_uart"
+CONF_RX_UART = "rx_uart"
 
-midea_dishwasher_ns = cg.esphome_ns.namespace('midea_dishwasher')
-MideaDishwasher = midea_dishwasher_ns.class_('MideaDishwasher', cg.Component)
+midea_dishwasher_ns = cg.esphome_ns.namespace("midea_dishwasher")
+MideaDishwasher = midea_dishwasher_ns.class_("MideaDishwasher", cg.Component)
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(MideaDishwasher),
