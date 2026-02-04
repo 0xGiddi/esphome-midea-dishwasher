@@ -2,7 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
 from esphome.const import (
-    DEVICE_CLASS_DOOR,
+    DEVICE_CLASS_OPENING,
     DEVICE_CLASS_PROBLEM,
 )
 from . import MideaDishwasher, midea_dishwasher_ns
