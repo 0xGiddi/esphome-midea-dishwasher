@@ -26,7 +26,7 @@ class MideaDishwasher : public Component {
 
     if (debug_mode_ && !debug_ip_.empty()) {
 #ifdef USE_ESP_IDF
-    udp_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    udp_socket_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (udp_socket_ >= 0) {
       memset(&dest_addr_, 0, sizeof(dest_addr_));
       dest_addr_.sin_family = AF_INET;
