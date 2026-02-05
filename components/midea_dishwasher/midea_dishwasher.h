@@ -6,6 +6,8 @@
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/wifi/wifi_component.h"
 #include "esphome/components/switch/switch.h"
+#include "esphome/components/text/text.h"
+#include "esphome/components/number/number.h"
 
 #ifdef USE_ESP_IDF
 #include "lwip/sockets.h"
@@ -21,6 +23,26 @@ namespace esphome
 
     // Forward declaration
     class MideaDishwasher;
+
+    class DebugIPText : public text::Text
+    {
+    public:
+      void set_parent(MideaDishwasher *parent) { parent_ = parent; }
+
+    protected:
+      void control(const std::string &value) override;
+      MideaDishwasher *parent_{nullptr};
+    };
+
+    class DebugPortNumber : public number::Number
+    {
+    public:
+      void set_parent(MideaDishwasher *parent) { parent_ = parent; }
+
+    protected:
+      void control(float value) override;
+      MideaDishwasher *parent_{nullptr};
+    };
 
     class DebugSwitch : public switch_::Switch
     {
@@ -93,6 +115,53 @@ namespace esphome
       void set_debug_mode(bool mode) { debug_mode_ = mode; }
       void set_debug_ip(const std::string &ip) { debug_ip_ = ip; }
       void set_debug_port(uint16_t port) { debug_port_ = port; }
+
+    public:
+      // Add these setters
+      void set_debug_ip_text(DebugIPText *t)
+      {
+        debug_ip_text_ = t;
+        debug_ip_text_->set_parent(this);
+        debug_ip_text_->publish_state(debug_ip_);
+      }
+
+      void set_debug_port_number(DebugPortNumber *n)
+      {
+        debug_port_number_ = n;
+        debug_port_number_->set_parent(this);
+        debug_port_number_->publish_state(debug_port_);
+      }
+
+      void update_debug_ip(const std::string &ip)
+      {
+        debug_ip_ = ip;
+        udp_initialized_ = false; // Force reconnect
+#ifdef USE_ESP_IDF
+        if (udp_socket_ >= 0)
+        {
+          close(udp_socket_);
+          udp_socket_ = -1;
+        }
+#endif
+      }
+
+      void update_debug_port(uint16_t port)
+      {
+        debug_port_ = port;
+        udp_initialized_ = false; // Force reconnect
+#ifdef USE_ESP_IDF
+        if (udp_socket_ >= 0)
+        {
+          close(udp_socket_);
+          udp_socket_ = -1;
+        }
+#endif
+      }
+
+    protected:
+      // Add these members
+      DebugIPText *debug_ip_text_{nullptr};
+      DebugPortNumber *debug_port_number_{nullptr};
 
       void set_debug_switch(DebugSwitch *sw)
       {
@@ -321,6 +390,27 @@ namespace esphome
       }
       publish_state(state);
     }
+
+    inline void DebugSwitch::write_state(bool state) {
+  if (parent_ != nullptr) {
+    parent_->set_debug_enabled(state);
+  }
+  publish_state(state);
+}
+
+inline void DebugIPText::control(const std::string &value) {
+  if (parent_ != nullptr) {
+    parent_->update_debug_ip(value);
+  }
+  publish_state(value);
+}
+
+inline void DebugPortNumber::control(float value) {
+  if (parent_ != nullptr) {
+    parent_->update_debug_port(static_cast<uint16_t>(value));
+  }
+  publish_state(value);
+}
 
   } // namespace midea_dishwasher
 } // namespace esphome
