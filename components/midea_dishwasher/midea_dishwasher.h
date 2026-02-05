@@ -36,7 +36,7 @@ class MideaDishwasher : public Component {
 #else
     udp_.begin(debug_port_);
 #endif
-    s}
+    }
 }
 
   void loop() override {
