@@ -1,7 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import uart, switch, text, number
-from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC
+from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC, CONF_MODE
 
 CODEOWNERS = ["@0xgiddi"]
 DEPENDENCIES = ["uart", "switch", "text", "number"]
@@ -60,6 +60,7 @@ async def to_code(config):
     
     if CONF_DEBUG_IP_TEXT in config:
         t = await text.new_text(config[CONF_DEBUG_IP_TEXT])
+        cg.add(t.traits.set_mode(text.TextMode.TEXT))
         cg.add(var.set_debug_ip_text(t))
     
     if CONF_DEBUG_PORT_NUMBER in config:
