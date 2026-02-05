@@ -4,7 +4,7 @@ from esphome.components import uart, switch
 from esphome.const import CONF_ID
 
 CODEOWNERS = ["@0xgiddi"]
-DEPENDENCIES = ["uart"]
+DEPENDENCIES = ["uart", "switch"]
 MULTI_CONF = False
 
 CONF_TX_UART = "tx_uart"
