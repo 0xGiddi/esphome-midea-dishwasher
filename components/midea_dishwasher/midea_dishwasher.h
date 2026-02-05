@@ -5,6 +5,13 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 
+#ifdef USE_ESP_IDF
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
+#else
+#include <WiFiUdp.h>
+#endif
+
 namespace esphome {
 namespace midea_dishwasher {
 
@@ -16,6 +23,19 @@ class MideaDishwasher : public Component {
   void setup() override {
     buffer_tx_iface_.reserve(128);
     buffer_rx_iface_.reserve(128);
+
+    if (debug_mode_ && !debug_ip_.empty()) {
+#ifdef USE_ESP_IDF
+    udp_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (udp_socket_ >= 0) {
+      memset(&dest_addr_, 0, sizeof(dest_addr_));
+      dest_addr_.sin_family = AF_INET;
+      dest_addr_.sin_port = htons(debug_port_);
+      inet_aton(debug_ip_.c_str(), &dest_addr_.sin_addr);
+    }
+#else
+    udp_.begin(debug_port_);
+#endif
   }
 
   void loop() override {
@@ -41,6 +61,9 @@ class MideaDishwasher : public Component {
   void set_water_temperature(sensor::Sensor *sensor) { water_temperature_ = sensor; }
   void set_water_hardness(sensor::Sensor *sensor) { water_hardness_ = sensor; }
   void set_error(sensor::Sensor *sensor) { error_ = sensor; }
+  void set_debug_mode(bool mode) { debug_mode_ = mode; }
+  void set_debug_ip(const std::string &ip) { debug_ip_ = ip; }
+  void set_debug_port(uint16_t port) { debug_port_ = port; }
 
  protected:
   uart::UARTComponent *tx_iface_;
@@ -62,6 +85,37 @@ class MideaDishwasher : public Component {
   sensor::Sensor *water_temperature_{nullptr};
   sensor::Sensor *water_hardness_{nullptr};
   sensor::Sensor *error_{nullptr};
+
+  bool debug_mode_{false};
+  std::string debug_ip_;
+  uint16_t debug_port_{9595};
+#ifdef USE_ESP_IDF
+  int udp_socket_{-1};
+  struct sockaddr_in dest_addr_;
+#else
+  WiFiUDP udp_;
+#endif
+
+void send_debug_packet_(std::vector<uint8_t> &buffer, size_t len, uint8_t source) {
+    if (!debug_mode_ || debug_ip_.empty())
+      return;
+    
+    // Prepend source byte: 0x01 = TX, 0x02 = RX
+    std::vector<uint8_t> packet;
+    packet.push_back(source);
+    packet.insert(packet.end(), buffer.begin(), buffer.begin() + len);
+    
+#ifdef USE_ESP_IDF
+    if (udp_socket_ >= 0) {
+      sendto(udp_socket_, packet.data(), packet.size(), 0, 
+             (struct sockaddr *)&dest_addr_, sizeof(dest_addr_));
+    }
+#else
+    udp_.beginPacket(debug_ip_.c_str(), debug_port_);
+    udp_.write(packet.data(), packet.size());
+    udp_.endPacket();
+#endif
+  }
 
   void publish_binary_(binary_sensor::BinarySensor *sensor, bool state) {
     if (sensor != nullptr && (!sensor->has_state() || sensor->state != state))
@@ -119,6 +173,9 @@ class MideaDishwasher : public Component {
           parse_tx_packet_(buffer);
         if (data_len == 0x10)
           parse_rx_packet_(buffer);
+
+        uint8_t source = (data_len == 0x1f) ? 0x01 : 0x02;
+        send_debug_packet_(buffer, packet_size, source);
         buffer.erase(buffer.begin(), buffer.begin() + packet_size);
       }
     }
