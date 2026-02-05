@@ -34,10 +34,13 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID], tx_uart, rx_uart)
     await cg.register_component(var, config)
     
-    if config[CONF_DEBUG_MODE]:
-        cg.add(var.set_debug_mode(True))
+    # Always set IP and port if provided
+    if config[CONF_DEBUG_IP]:
         cg.add(var.set_debug_ip(config[CONF_DEBUG_IP]))
-        cg.add(var.set_debug_port(config[CONF_DEBUG_PORT]))
+    cg.add(var.set_debug_port(config[CONF_DEBUG_PORT]))
+    
+    # Set initial debug mode
+    cg.add(var.set_debug_mode(config[CONF_DEBUG_MODE]))
     
     if CONF_DEBUG_SWITCH in config:
         sw = await switch.new_switch(config[CONF_DEBUG_SWITCH])
