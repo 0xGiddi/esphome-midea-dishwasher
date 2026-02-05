@@ -26,9 +26,9 @@ class MideaDishwasher : public Component {
 }
 
   void loop() override {
-    // Initialize UDP once WiFi is connected
+  // Initialize UDP once WiFi is connected
   if (debug_mode_ && !debug_ip_.empty() && !udp_initialized_) {
-    if (WiFi.isConnected()) {
+    if (wifi::global_wifi_component != nullptr && wifi::global_wifi_component->is_connected()) {
 #ifdef USE_ESP_IDF
       udp_socket_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
       if (udp_socket_ >= 0) {
