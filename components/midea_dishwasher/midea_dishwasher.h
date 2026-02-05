@@ -129,7 +129,7 @@ class MideaDishwasher : public Component {
     publish_binary_(door_open_, data[13] & 0x08);
     publish_binary_(low_rinse_aid_, data[13] & 0x10);
     publish_binary_(low_salt_, data[13] & 0x20);
-    publish_binary_(extra_dry_, data[14] & 0x02);
+    publish_binary_(extra_dry_, data[15] & 0x02);
     publish_value_(time_remaining_, data[5]);
     publish_value_(water_temperature_, (data[8] * 2) + 20);
     publish_value_(water_hardness_, data[16]);
