@@ -36,7 +36,8 @@ class MideaDishwasher : public Component {
 #else
     udp_.begin(debug_port_);
 #endif
-  }
+    s}
+}
 
   void loop() override {
     read_uart_(tx_iface_, buffer_tx_iface_);
