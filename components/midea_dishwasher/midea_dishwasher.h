@@ -124,7 +124,8 @@ class MideaDishwasher : public Component {
     }
   }
 
-  void parse_tx_packet_(uint8_t *data) {
+  void parse_tx_packet_(std::vector<uint8_t> &buffer) {
+    uint8_t *data = buffer.data();
     publish_binary_(door_open_, data[13] & 0x08);
     publish_binary_(low_rinse_aid_, data[13] & 0x10);
     publish_binary_(low_salt_, data[13] & 0x20);
@@ -151,7 +152,8 @@ class MideaDishwasher : public Component {
     publish_string_(current_program_, program);
   }
 
-  void parse_rx_packet_(uint8_t *data) {
+  void parse_rx_packet_(std::vector<uint8_t> &buffer) {
+    uint8_t *data = buffer.data();
     uint16_t delay_val = data[12] | (static_cast<uint16_t>(data[13]) << 8);
     publish_value_(start_delay_, delay_val);
     publish_binary_(child_lock_, data[15] & 0x08);
