@@ -44,7 +44,7 @@ class MideaDishwasher : public Component {
 #endif
     }
   }
-  
+
     read_uart_(tx_iface_, buffer_tx_iface_);
     process_buffer_(buffer_tx_iface_, 0x1f);
 
@@ -92,6 +92,7 @@ class MideaDishwasher : public Component {
   sensor::Sensor *water_hardness_{nullptr};
   sensor::Sensor *error_{nullptr};
 
+  bool udp_initialized_{false};
   bool debug_mode_{false};
   std::string debug_ip_;
   uint16_t debug_port_{9595};
