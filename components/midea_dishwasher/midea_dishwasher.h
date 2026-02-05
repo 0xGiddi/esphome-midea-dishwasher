@@ -5,6 +5,7 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/wifi/wifi_component.h"
+#include "esphome/components/switch/switch.h"
 
 #ifdef USE_ESP_IDF
 #include "lwip/sockets.h"
@@ -16,6 +17,17 @@
 namespace esphome {
 namespace midea_dishwasher {
 
+// Forward declaration
+class MideaDishwasher;
+
+class DebugSwitch : public switch_::Switch {
+ public:
+  void set_parent(MideaDishwasher *parent) { parent_ = parent; }
+ protected:
+  void write_state(bool state) override;
+  MideaDishwasher *parent_{nullptr};
+};
+
 class MideaDishwasher : public Component {
  public:
   MideaDishwasher(uart::UARTComponent *tx_iface, uart::UARTComponent *rx_iface)
@@ -24,27 +36,27 @@ class MideaDishwasher : public Component {
   void setup() override {
     buffer_tx_iface_.reserve(128);
     buffer_rx_iface_.reserve(128);
-}
+  }
 
   void loop() override {
-  // Initialize UDP once WiFi is connected
-  if (debug_mode_ && !debug_ip_.empty() && !udp_initialized_) {
-    if (wifi::global_wifi_component != nullptr && wifi::global_wifi_component->is_connected()) {
+    // Initialize UDP once WiFi is connected
+    if (debug_mode_ && !debug_ip_.empty() && !udp_initialized_) {
+      if (wifi::global_wifi_component != nullptr && wifi::global_wifi_component->is_connected()) {
 #ifdef USE_ESP_IDF
-      udp_socket_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-      if (udp_socket_ >= 0) {
-        memset(&dest_addr_, 0, sizeof(dest_addr_));
-        dest_addr_.sin_family = AF_INET;
-        dest_addr_.sin_port = htons(debug_port_);
-        inet_aton(debug_ip_.c_str(), &dest_addr_.sin_addr);
-        udp_initialized_ = true;
-      }
+        udp_socket_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (udp_socket_ >= 0) {
+          memset(&dest_addr_, 0, sizeof(dest_addr_));
+          dest_addr_.sin_family = AF_INET;
+          dest_addr_.sin_port = htons(debug_port_);
+          inet_aton(debug_ip_.c_str(), &dest_addr_.sin_addr);
+          udp_initialized_ = true;
+        }
 #else
-      udp_.begin(debug_port_);
-      udp_initialized_ = true;
+        udp_.begin(debug_port_);
+        udp_initialized_ = true;
 #endif
+      }
     }
-  }
 
     read_uart_(tx_iface_, buffer_tx_iface_);
     process_buffer_(buffer_tx_iface_, 0x1f);
@@ -71,6 +83,19 @@ class MideaDishwasher : public Component {
   void set_debug_mode(bool mode) { debug_mode_ = mode; }
   void set_debug_ip(const std::string &ip) { debug_ip_ = ip; }
   void set_debug_port(uint16_t port) { debug_port_ = port; }
+  
+  void set_debug_switch(DebugSwitch *sw) { 
+    debug_switch_ = sw;
+    debug_switch_->set_parent(this);
+    debug_switch_->publish_state(debug_mode_);
+  }
+
+  void set_debug_enabled(bool enabled) {
+    debug_mode_ = enabled;
+    if (debug_switch_ != nullptr) {
+      debug_switch_->publish_state(enabled);
+    }
+  }
 
  protected:
   uart::UARTComponent *tx_iface_;
@@ -97,6 +122,8 @@ class MideaDishwasher : public Component {
   bool debug_mode_{false};
   std::string debug_ip_;
   uint16_t debug_port_{9595};
+  DebugSwitch *debug_switch_{nullptr};
+
 #ifdef USE_ESP_IDF
   int udp_socket_{-1};
   struct sockaddr_in dest_addr_;
@@ -104,11 +131,10 @@ class MideaDishwasher : public Component {
   WiFiUDP udp_;
 #endif
 
-void send_debug_packet_(std::vector<uint8_t> &buffer, size_t len, uint8_t source) {
+  void send_debug_packet_(std::vector<uint8_t> &buffer, size_t len, uint8_t source) {
     if (!debug_mode_ || debug_ip_.empty())
       return;
     
-    // Prepend source byte: 0x01 = TX, 0x02 = RX
     std::vector<uint8_t> packet;
     packet.push_back(source);
     packet.insert(packet.end(), buffer.begin(), buffer.begin() + len);
@@ -225,5 +251,13 @@ void send_debug_packet_(std::vector<uint8_t> &buffer, size_t len, uint8_t source
   }
 };
 
+// Implementation of DebugSwitch::write_state (must be after MideaDishwasher is fully defined)
+inline void DebugSwitch::write_state(bool state) {
+  if (parent_ != nullptr) {
+    parent_->set_debug_enabled(state);
+  }
+  publish_state(state);
 }
-} 
+
+}  // namespace midea_dishwasher
+}  // namespace esphome
