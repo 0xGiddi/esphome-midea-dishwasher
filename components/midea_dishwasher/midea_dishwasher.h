@@ -116,9 +116,9 @@ class MideaDishwasher : public Component {
         continue;
       } else {
         if (data_len == 0x1f)
-          parse_tx_packet_(&buffer);
+          parse_tx_packet_(buffer);
         if (data_len == 0x10)
-          parse_rx_packet_(&buffer);
+          parse_rx_packet_(buffer);
         buffer.erase(buffer.begin(), buffer.begin() + packet_size);
       }
     }
