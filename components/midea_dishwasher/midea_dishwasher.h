@@ -23,23 +23,28 @@ class MideaDishwasher : public Component {
   void setup() override {
     buffer_tx_iface_.reserve(128);
     buffer_rx_iface_.reserve(128);
-
-    if (debug_mode_ && !debug_ip_.empty()) {
-#ifdef USE_ESP_IDF
-    udp_socket_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (udp_socket_ >= 0) {
-      memset(&dest_addr_, 0, sizeof(dest_addr_));
-      dest_addr_.sin_family = AF_INET;
-      dest_addr_.sin_port = htons(debug_port_);
-      inet_aton(debug_ip_.c_str(), &dest_addr_.sin_addr);
-    }
-#else
-    udp_.begin(debug_port_);
-#endif
-    }
 }
 
   void loop() override {
+    // Initialize UDP once WiFi is connected
+  if (debug_mode_ && !debug_ip_.empty() && !udp_initialized_) {
+    if (WiFi.isConnected()) {
+#ifdef USE_ESP_IDF
+      udp_socket_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+      if (udp_socket_ >= 0) {
+        memset(&dest_addr_, 0, sizeof(dest_addr_));
+        dest_addr_.sin_family = AF_INET;
+        dest_addr_.sin_port = htons(debug_port_);
+        inet_aton(debug_ip_.c_str(), &dest_addr_.sin_addr);
+        udp_initialized_ = true;
+      }
+#else
+      udp_.begin(debug_port_);
+      udp_initialized_ = true;
+#endif
+    }
+  }
+  
     read_uart_(tx_iface_, buffer_tx_iface_);
     process_buffer_(buffer_tx_iface_, 0x1f);
 
