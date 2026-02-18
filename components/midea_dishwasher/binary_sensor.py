@@ -32,9 +32,7 @@ CONFIG_SCHEMA = cv.Schema({
         device_class=DEVICE_CLASS_PROBLEM,
     ),
     cv.Optional(CONF_EXTRA_DRY): binary_sensor.binary_sensor_schema(),
-    cv.Optional(CONF_CHILD_LOCK): binary_sensor.binary_sensor_schema(
-        device_class=DEVICE_CLASS_LOCK,
-    ),
+    cv.Optional(CONF_CHILD_LOCK): binary_sensor.binary_sensor_schema(),
     cv.Optional(CONF_CYCLE_COMPLETE): binary_sensor.binary_sensor_schema(),
     cv.Optional(CONF_ERROR): binary_sensor.binary_sensor_schema(
         device_class=DEVICE_CLASS_PROBLEM,
