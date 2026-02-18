@@ -246,9 +246,10 @@ binary_sensor:
 
 ## Home Assistant Dashboard Card
 
-A ready-to-use dashboard card with contextual display — shows detailed cycle info only when running, alerts on errors, and always-visible status indicators for door, salt, rinse-aid, extra dry, and child lock. This card is very basic in design and can use improvements. 
+A ready-to-use dashboard card with contextual display — shows detailed cycle info only when running, alerts on errors, and always-visible status indicators for door, salt, rinse-aid, extra dry, and child lock.
 
-**Requirements:** [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) from HACS. 
+**Requirements:** [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) from HACS. A plain-card alternative (no custom cards needed) is included at the bottom.
+
 To use: In Home Assistant, go to your dashboard, click the three dots menu, select **Edit Dashboard**, click **+ Add Card**, choose **Manual**, and paste the YAML below.
 
 > Replace `dishwasher` in entity IDs if your ESPHome device has a different name.
@@ -256,69 +257,51 @@ To use: In Home Assistant, go to your dashboard, click the three dots menu, sele
 ```yaml
 type: vertical-stack
 cards:
+
+  # ── Header: Status + Program ──────────────────────────────
   - type: custom:mushroom-template-card
     primary: Dishwasher
-    secondary: "{{ states('sensor.dishwasher_status') }}"
+    secondary: "{{ states('text_sensor.dishwasher_status') }}"
     icon: mdi:dishwasher
-    icon_color: >-
-      {% set state = states('sensor.dishwasher_system_state') |
-      int(0) %}
-
+    icon_color: |-
+      {% set state = states('sensor.dishwasher_system_state') | int(0) %}
       {% if state == 3 %}blue
-
       {% elif state == 4 %}red
-
       {% elif state == 1 %}green
-
       {% elif state == 0 %}disabled
-
       {% else %}orange{% endif %}
-    badge_icon: >-
-      {% if is_state('binary_sensor.dishwasher_error', 'on')
-      %}mdi:alert-circle
-
-      {% elif is_state('binary_sensor.dishwasher_door', 'on')
-      %}mdi:door-open
-
-      {% elif is_state('binary_sensor.dishwasher_paused', 'on')
-      %}mdi:pause-circle
-
-      {% elif is_state('binary_sensor.dishwasher_running', 'on')
-      %}mdi:play-circle
-
-      {% elif is_state('binary_sensor.dishwasher_complete', 'on')
-      %}mdi:check-circle
-
+    badge_icon: |-
+      {% if is_state('binary_sensor.dishwasher_error', 'on') %}mdi:alert-circle
+      {% elif is_state('binary_sensor.dishwasher_door', 'on') %}mdi:door-open
+      {% elif is_state('binary_sensor.dishwasher_paused', 'on') %}mdi:pause-circle
+      {% elif is_state('binary_sensor.dishwasher_running', 'on') %}mdi:play-circle
+      {% elif is_state('binary_sensor.dishwasher_complete', 'on') %}mdi:check-circle
       {% endif %}
-    badge_color: >-
+    badge_color: |-
       {% if is_state('binary_sensor.dishwasher_error', 'on') %}red
-
-      {% elif is_state('binary_sensor.dishwasher_paused', 'on')
-      %}orange
-
-      {% elif is_state('binary_sensor.dishwasher_running', 'on')
-      %}blue
-
-      {% elif is_state('binary_sensor.dishwasher_complete', 'on')
-      %}green
-
+      {% elif is_state('binary_sensor.dishwasher_paused', 'on') %}orange
+      {% elif is_state('binary_sensor.dishwasher_running', 'on') %}blue
+      {% elif is_state('binary_sensor.dishwasher_complete', 'on') %}green
       {% endif %}
     tap_action:
       action: more-info
-      entity: sensor.dishwasher_status
+      entity: text_sensor.dishwasher_status
+
+  # ── Running info + progress gauge ─────────────────────────
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
         state: "on"
     card:
       type: custom:mushroom-template-card
-      primary: "{{ states('sensor.dishwasher_program') }}"
+      primary: "{{ states('text_sensor.dishwasher_program') }}"
       secondary: >-
-        {{ states('sensor.dishwasher_cycle_stage') }} · {{
-        states('sensor.dishwasher_time_remaining') | int }} min left
+        {{ states('text_sensor.dishwasher_cycle_stage') }}
+        · {{ states('sensor.dishwasher_time_remaining') }} min left
         · {{ states('sensor.dishwasher_temperature') }}°C
       icon: mdi:progress-clock
       icon_color: blue
+
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -338,6 +321,8 @@ cards:
           color: "#81C784"
         - from: 90
           color: "#66BB6A"
+
+  # ── Cycle details (when running) ──────────────────────────
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -349,10 +334,10 @@ cards:
       show_icon: true
       columns: 4
       entities:
-        - entity: sensor.dishwasher_program
+        - entity: text_sensor.dishwasher_program
           name: Program
           icon: mdi:washing-machine
-        - entity: sensor.dishwasher_cycle_stage
+        - entity: text_sensor.dishwasher_cycle_stage
           name: Stage
           icon: mdi:format-list-numbered
         - entity: sensor.dishwasher_time_remaining
@@ -361,6 +346,8 @@ cards:
         - entity: sensor.dishwasher_temperature
           name: Temp
           icon: mdi:thermometer-water
+
+  # ── Live operation chip (when running) ────────────────────
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -371,11 +358,13 @@ cards:
       chips:
         - type: template
           icon: mdi:cog
-          content: "{{ states('sensor.dishwasher_operation') }}"
+          content: "{{ states('text_sensor.dishwasher_operation') }}"
           icon_color: blue
+
+  # ── Cycle complete banner ─────────────────────────────────
   - type: conditional
     conditions:
-      - entity: binary_sensor.dishwasher_completez
+      - entity: binary_sensor.dishwasher_complete
         state: "on"
     card:
       type: custom:mushroom-template-card
@@ -383,70 +372,59 @@ cards:
       secondary: Open the door for better drying
       icon: mdi:check-circle-outline
       icon_color: green
+
+  # ── Error banner ──────────────────────────────────────────
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_error
         state: "on"
     card:
       type: custom:mushroom-template-card
-      primary: Error E{{ states('sensor.dishwasher_error_code') | int  }}
-      secondary: >-
-        {% set code = states('sensor.dishwasher_error_code') | int(0)
-        %}
-
+      primary: "Error E{{ states('sensor.dishwasher_error_code') }}"
+      secondary: |-
+        {% set code = states('sensor.dishwasher_error_code') | int(0) %}
         {% if code == 1 %}Water inlet timeout — check tap
-
         {% elif code == 3 %}Heater fault
-
         {% elif code == 4 %}Overflow detected
-
         {% else %}Error code {{ code }}{% endif %}
       icon: mdi:alert-circle
       icon_color: red
+
+  # ── Status indicators (always visible) ────────────────────
   - type: custom:mushroom-chips-card
     alignment: center
     chips:
       - type: template
         icon: mdi:door-open
-        icon_color: >-
-          {{ 'orange' if is_state('binary_sensor.dishwasher_door',
-          'on') else 'disabled' }}
+        icon_color: "{{ 'orange' if is_state('binary_sensor.dishwasher_door', 'on') else 'disabled' }}"
         content: Door
         tap_action:
           action: more-info
           entity: binary_sensor.dishwasher_door
       - type: template
         icon: mdi:shaker-outline
-        icon_color: >-
-          {{ 'red' if is_state('binary_sensor.dishwasher_salt_low',
-          'on') else 'green' }}
+        icon_color: "{{ 'red' if is_state('binary_sensor.dishwasher_salt_low', 'on') else 'green' }}"
         content: Salt
         tap_action:
           action: more-info
           entity: binary_sensor.dishwasher_salt_low
       - type: template
         icon: mdi:bottle-tonic-outline
-        icon_color: >-
-          {{ 'red' if
-          is_state('binary_sensor.dishwasher_rinse_aid_low', 'on')
-          else 'green' }}
+        icon_color: "{{ 'red' if is_state('binary_sensor.dishwasher_rinse_aid_low', 'on') else 'green' }}"
         content: Rinse-Aid
         tap_action:
           action: more-info
           entity: binary_sensor.dishwasher_rinse_aid_low
       - type: template
         icon: mdi:fan
-        icon_color: >-
-          {{ 'blue' if is_state('binary_sensor.dishwasher_extra_dry',
-          'on') else 'disabled' }}
+        icon_color: "{{ 'blue' if is_state('binary_sensor.dishwasher_extra_dry', 'on') else 'disabled' }}"
         content: Extra Dry
       - type: template
         icon: mdi:lock
-        icon_color: >-
-          {{ 'orange' if
-          is_state('binary_sensor.dishwasher_child_lock', 'on') else
-          'disabled' }}
+        icon_color: "{{ 'orange' if is_state('binary_sensor.dishwasher_child_lock', 'on') else 'disabled' }}"
         content: Child Lock
+
+  # ── Temperature gauge (when running) ──────────────────────
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -467,4 +445,81 @@ cards:
         - from: 55
           color: "#EF5350"
 
+  # ── Diagnostics ───────────────────────────────────────────
+  - type: entities
+    title: Diagnostics
+    show_header_toggle: false
+    entities:
+      - entity: sensor.dishwasher_hardness
+        name: Water Hardness
+        icon: mdi:water-opacity
+      - entity: sensor.dishwasher_error_code
+        name: Error Code
+        icon: mdi:alert-outline
+      - entity: sensor.dishwasher_operation_code
+        name: Operation Code (B4)
+        icon: mdi:state-machine
+      - entity: sensor.dishwasher_system_state
+        name: System State (raw)
+        icon: mdi:numeric
+      - entity: sensor.dishwasher_sub_state
+        name: Sub State (raw)
+        icon: mdi:numeric
+      - entity: sensor.dishwasher_phase_code
+        name: Phase Code (raw)
+        icon: mdi:numeric
 ```
+
+<details>
+<summary>Plain alternative (no HACS cards needed)</summary>
+
+```yaml
+type: vertical-stack
+cards:
+  - type: entities
+    title: Dishwasher
+    icon: mdi:dishwasher
+    entities:
+      - entity: text_sensor.dishwasher_status
+        name: Status
+      - entity: text_sensor.dishwasher_program
+        name: Program
+      - entity: text_sensor.dishwasher_cycle_stage
+        name: Cycle Stage
+      - entity: text_sensor.dishwasher_operation
+        name: Operation
+      - type: divider
+      - entity: sensor.dishwasher_progress
+        name: Progress
+      - entity: sensor.dishwasher_time_remaining
+        name: Time Remaining
+      - entity: sensor.dishwasher_temperature
+        name: Water Temp
+      - type: divider
+      - entity: binary_sensor.dishwasher_running
+        name: Running
+      - entity: binary_sensor.dishwasher_door
+        name: Door
+      - entity: binary_sensor.dishwasher_paused
+        name: Paused
+      - entity: binary_sensor.dishwasher_error
+        name: Error
+      - entity: binary_sensor.dishwasher_complete
+        name: Cycle Complete
+      - type: divider
+      - entity: binary_sensor.dishwasher_salt_low
+        name: Salt Low
+      - entity: binary_sensor.dishwasher_rinse_aid_low
+        name: Rinse-Aid Low
+      - entity: binary_sensor.dishwasher_extra_dry
+        name: Extra Dry
+      - entity: binary_sensor.dishwasher_child_lock
+        name: Child Lock
+      - type: divider
+      - entity: sensor.dishwasher_hardness
+        name: Hardness
+      - entity: sensor.dishwasher_error_code
+        name: Error Code
+```
+
+</details>
