@@ -64,8 +64,8 @@ namespace esphome::midea_dishwasher {
         
         publish_state_(error_, data[10] != 0);
         publish_state_(door_open_, (data[13] & 0x08) != 0);
-        publish_state_(salt_low_, (data[13] & 0x20) != 0);
-        publish_state_(rinse_aid_low_, (data[13] & 0x10) != 0);
+        publish_state_(salt_low_, (data[13] & 0x10) != 0);
+        publish_state_(rinse_aid_low_, (data[13] & 0x20) != 0);
         publish_state_(extra_dry_, (data[15] & 0x02) != 0);
         publish_state_(cycle_complete_, (data[12] & 0x07) == 5);
         publish_state_(paused_, (data[3] & 0x0f) == 3 && (data[3] >> 4) == 3 || (data[3] & 0x0f) == 2 && (data[3] >> 4) == 2);
