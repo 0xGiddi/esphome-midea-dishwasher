@@ -1,5 +1,4 @@
 # ESPHome Midea Dishwasher Component
-
 ESPHome external component that decodes the UART protocol between a Midea countertop dishwasher's control board and display panel, exposing all interesting state to Home Assistant.
 
 ## Hardware
@@ -136,6 +135,8 @@ binary_sensor:
 | `extra_dry` | Extra dry option enabled | TX15 bit 1 |
 | `child_lock` | Child lock active (from front panel) | RX15 bit 3 |
 
+For more details on the protocol, see https://giddi.net/posts/talking-dirty-dishes-sniffing-the-rinse-cycle/
+
 ## Full Example Configuration
 
 ```yaml
@@ -258,7 +259,7 @@ To use: In Home Assistant, go to your dashboard, click the three dots menu, sele
 type: vertical-stack
 cards:
 
-  # ── Header: Status + Program ──────────────────────────────
+  # Header: Status + Program
   - type: custom:mushroom-template-card
     primary: Dishwasher
     secondary: "{{ states('text_sensor.dishwasher_status') }}"
@@ -287,7 +288,7 @@ cards:
       action: more-info
       entity: text_sensor.dishwasher_status
 
-  # ── Running info + progress gauge ─────────────────────────
+  #  Running info + progress gauge 
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -322,7 +323,7 @@ cards:
         - from: 90
           color: "#66BB6A"
 
-  # ── Cycle details (when running) ──────────────────────────
+  #  Cycle details (when running) 
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -347,7 +348,7 @@ cards:
           name: Temp
           icon: mdi:thermometer-water
 
-  # ── Live operation chip (when running) ────────────────────
+  #  Live operation chip (when running) 
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -361,7 +362,7 @@ cards:
           content: "{{ states('text_sensor.dishwasher_operation') }}"
           icon_color: blue
 
-  # ── Cycle complete banner ─────────────────────────────────
+  #  Cycle complete banner 
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_complete
@@ -373,7 +374,7 @@ cards:
       icon: mdi:check-circle-outline
       icon_color: green
 
-  # ── Error banner ──────────────────────────────────────────
+  #  Error banner 
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_error
@@ -390,7 +391,7 @@ cards:
       icon: mdi:alert-circle
       icon_color: red
 
-  # ── Status indicators (always visible) ────────────────────
+  #  Status indicators (always visible) 
   - type: custom:mushroom-chips-card
     alignment: center
     chips:
@@ -424,7 +425,7 @@ cards:
         icon_color: "{{ 'orange' if is_state('binary_sensor.dishwasher_child_lock', 'on') else 'disabled' }}"
         content: Child Lock
 
-  # ── Temperature gauge (when running) ──────────────────────
+  #  Temperature gauge (when running) 
   - type: conditional
     conditions:
       - entity: binary_sensor.dishwasher_running
@@ -444,34 +445,9 @@ cards:
           color: "#FFB74D"
         - from: 55
           color: "#EF5350"
-
-  # ── Diagnostics ───────────────────────────────────────────
-  - type: entities
-    title: Diagnostics
-    show_header_toggle: false
-    entities:
-      - entity: sensor.dishwasher_hardness
-        name: Water Hardness
-        icon: mdi:water-opacity
-      - entity: sensor.dishwasher_error_code
-        name: Error Code
-        icon: mdi:alert-outline
-      - entity: sensor.dishwasher_operation_code
-        name: Operation Code (B4)
-        icon: mdi:state-machine
-      - entity: sensor.dishwasher_system_state
-        name: System State (raw)
-        icon: mdi:numeric
-      - entity: sensor.dishwasher_sub_state
-        name: Sub State (raw)
-        icon: mdi:numeric
-      - entity: sensor.dishwasher_phase_code
-        name: Phase Code (raw)
-        icon: mdi:numeric
 ```
 
-<details>
-<summary>Plain alternative (no HACS cards needed)</summary>
+Plain alternative (no HACS cards needed)
 
 ```yaml
 type: vertical-stack
@@ -521,5 +497,3 @@ cards:
       - entity: sensor.dishwasher_error_code
         name: Error Code
 ```
-
-</details>
